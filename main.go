@@ -3,27 +3,30 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"golang.org/x/net/html"
 	"io/ioutil"
 	"net/http"
-	"strconv"
-	"sync"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 var urlsArray []string
 
 var macaulayUrl = "http://media2.macaulaylibrary.org/Audio/Audio1/"
 
+var searchUrl = "http://macaulaylibrary.org/search?&asset_format_id=1000&collection_type_id=1&layout=1&sort=21&page="
+
 func main() {
 
 	var wg sync.WaitGroup
-	
+
 	numOfPagesToVisit := 1729 // change this to know how many pages to visit
 
-	for i := 1; i < numOfPagesToVisit + 1; i++ {
+	for i := 1; i < numOfPagesToVisit+1; i++ {
 		fmt.Println("page number: ", i)
 		wg.Add(1)
 		go func() {
@@ -32,15 +35,15 @@ func main() {
 			fmt.Println("size of array: ", len(urlsArray))
 		}()
 
-		if i % 10 == 0{
+		if i%10 == 0 {
 			time.Sleep(30000 * time.Millisecond)
 		}
 
 	}
 	wg.Wait()
 	fmt.Println(len(urlsArray))
-	
-	for _, url := range urlsArray{
+
+	for _, url := range urlsArray {
 		fmt.Println(macaulayUrl + url[7:9] + url[6:]) // get rid of "/audio" (first 6 characters) and get next two
 	}
 
@@ -50,13 +53,13 @@ func main() {
 
 func getUrlsFromPage(pageNum int) {
 
-	url := "http://macaulaylibrary.org/search?&asset_format_id=1000&collection_type_id=1&layout=1&sort=21&page=" + strconv.Itoa(pageNum)
+	url := searchUrl + strconv.Itoa(pageNum)
 	resp, _ := http.Get(url)
 	res_bytes, _ := ioutil.ReadAll(resp.Body)
 	//fmt.Println("HTML:\n\n", string(res_bytes))
 	b := resp.Body
 
-	if b == nil{
+	if b == nil {
 		return
 	}
 
@@ -94,15 +97,13 @@ loop:
 
 //from so: http://stackoverflow.com/questions/5884154/golang-read-text-file-into-string-array-and-write
 
-
-func writeUrlsToFile(){
-	var(
+func writeUrlsToFile() {
+	var (
 		file *os.File
-		err error
+		err  error
 	)
 
-		
-	if file, err = os.Create("audio_urls.txt"); err != nil{
+	if file, err = os.Create("audio_urls.txt"); err != nil {
 		return
 	}
 	defer file.Close()
@@ -111,21 +112,19 @@ func writeUrlsToFile(){
 
 	for _, url := range urlsArray {
 
-		_, err := file.WriteString(strings.TrimSpace("{'url':'" + 
-		macaulayUrl + 
-		url[7:9] + 
-		url[6:]) + 
-		"'}," + 
-		"\n");
+		_, err := file.WriteString(strings.TrimSpace("{'url':'"+
+			macaulayUrl+
+			url[7:9]+
+			url[6:]) +
+			"'}," +
+			"\n")
 
-		if err != nil{
+		if err != nil {
 			fmt.Println(err)
 			break
 		}
-		
 
 	}
-	
+
 	file.WriteString(strings.TrimSpace("]}"))
 }
-
