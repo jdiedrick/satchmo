@@ -26,7 +26,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	numOfPagesToVisit := 1 // change this to know how many pages to visit max seems to be 1729
+	numOfPagesToVisit := 1729 // change this to know how many pages to visit max seems to be 1729
 
 	for i := 1; i < numOfPagesToVisit+1; i++ {
 		fmt.Println("page number: ", i)
