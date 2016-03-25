@@ -24,7 +24,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	numOfPagesToVisit := 1729 // change this to know how many pages to visit
+	numOfPagesToVisit := 5 // change this to know how many pages to visit max seems to be 1729
 
 	for i := 1; i < numOfPagesToVisit+1; i++ {
 		fmt.Println("page number: ", i)
@@ -103,20 +103,20 @@ func writeUrlsToFile() {
 		err  error
 	)
 
-	if file, err = os.Create("audio_urls.txt"); err != nil {
+	if file, err = os.Create("audio_urls.json"); err != nil {
 		return
 	}
 	defer file.Close()
 
-	file.WriteString(strings.TrimSpace("{'urls':["))
+	file.WriteString(strings.TrimSpace("{\"urls\":["))
 
 	for _, url := range urlsArray {
 
-		_, err := file.WriteString(strings.TrimSpace("{'url':'"+
+		_, err := file.WriteString(strings.TrimSpace("{\"url\":\""+
 			macaulayUrl+
 			url[7:9]+
 			url[6:]) +
-			"'}," +
+			"\"}," +
 			"\n")
 
 		if err != nil {
