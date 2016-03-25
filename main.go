@@ -10,6 +10,7 @@ import (
 	"sync"
 	"os"
 	"strings"
+	"time"
 )
 
 var urlsArray []string
@@ -20,7 +21,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	
-	numOfPagesToVisit := 5 // change this to know how many pages to visit
+	numOfPagesToVisit := 20 // change this to know how many pages to visit
 
 	for i := 1; i < numOfPagesToVisit + 1; i++ {
 		fmt.Println("page number: ", i)
@@ -30,6 +31,10 @@ func main() {
 			getUrlsFromPage(i)
 			fmt.Println("size of array: ", len(urlsArray))
 		}()
+
+		if i % 10 == 0{
+			time.Sleep(10000 * time.Millisecond)
+		}
 
 	}
 	wg.Wait()
@@ -97,15 +102,25 @@ func writeUrlsToFile(){
 	}
 	defer file.Close()
 
+	file.WriteString(strings.TrimSpace("{'urls':["))
+
 	for _, url := range urlsArray {
 
-		_, err := file.WriteString(strings.TrimSpace(macaulayUrl + url[7:9] + url[6:]) + "\n");
+		_, err := file.WriteString(strings.TrimSpace("{'url':'" + 
+		macaulayUrl + 
+		url[7:9] + 
+		url[6:]) + 
+		"'}," + 
+		"\n");
 
 		if err != nil{
 			fmt.Println(err)
 			break
 		}
+		
 
 	}
+	
+	file.WriteString(strings.TrimSpace("]}"))
 }
 
