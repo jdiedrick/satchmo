@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"os"
+	"strings"
 )
 
 var urlsArray []string
+
+var macaulayUrl = "http://media2.macaulaylibrary.org/Audio/Audio1/"
 
 func main() {
 
@@ -32,8 +36,11 @@ func main() {
 	fmt.Println(len(urlsArray))
 	
 	for _, url := range urlsArray{
-		fmt.Println("http://media2.macaulaylibrary.org/Audio/Audio1/" + url[7:9] + url[6:]) // get rid of "/audio" (first 6 characters) and get next two
+		fmt.Println(macaulayUrl + url[7:9] + url[6:]) // get rid of "/audio" (first 6 characters) and get next two
 	}
+
+	writeUrlsToFile()
+	fmt.Println("done~")
 }
 
 func getUrlsFromPage(pageNum int) {
@@ -74,3 +81,31 @@ loop:
 		}
 	}
 }
+
+//from so: http://stackoverflow.com/questions/5884154/golang-read-text-file-into-string-array-and-write
+
+
+func writeUrlsToFile(){
+	var(
+		file *os.File
+		err error
+	)
+
+		
+	if file, err = os.Create("audio_urls.txt"); err != nil{
+		return
+	}
+	defer file.Close()
+
+	for _, url := range urlsArray {
+
+		_, err := file.WriteString(strings.TrimSpace(macaulayUrl + url[7:9] + url[6:]) + "\n");
+
+		if err != nil{
+			fmt.Println(err)
+			break
+		}
+
+	}
+}
+
