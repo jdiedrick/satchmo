@@ -21,7 +21,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	
-	numOfPagesToVisit := 20 // change this to know how many pages to visit
+	numOfPagesToVisit := 1729 // change this to know how many pages to visit
 
 	for i := 1; i < numOfPagesToVisit + 1; i++ {
 		fmt.Println("page number: ", i)
@@ -33,7 +33,7 @@ func main() {
 		}()
 
 		if i % 10 == 0{
-			time.Sleep(10000 * time.Millisecond)
+			time.Sleep(30000 * time.Millisecond)
 		}
 
 	}
@@ -55,6 +55,11 @@ func getUrlsFromPage(pageNum int) {
 	res_bytes, _ := ioutil.ReadAll(resp.Body)
 	//fmt.Println("HTML:\n\n", string(res_bytes))
 	b := resp.Body
+
+	if b == nil{
+		return
+	}
+
 	b.Close()
 	r := bytes.NewReader(res_bytes)
 	z := html.NewTokenizer(r)
