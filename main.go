@@ -20,11 +20,13 @@ var macaulayUrl = "http://media2.macaulaylibrary.org/Audio/Audio1/"
 
 var searchUrl = "http://macaulaylibrary.org/search?&asset_format_id=1000&collection_type_id=1&layout=1&sort=21&page="
 
+const t = `{{range $i, $v := .}}{{if $i}} or {{$v}}{{else}}{{$v}}{{end}}{{end}}`
+
 func main() {
 
 	var wg sync.WaitGroup
 
-	numOfPagesToVisit := 5 // change this to know how many pages to visit max seems to be 1729
+	numOfPagesToVisit := 1 // change this to know how many pages to visit max seems to be 1729
 
 	for i := 1; i < numOfPagesToVisit+1; i++ {
 		fmt.Println("page number: ", i)
@@ -110,13 +112,19 @@ func writeUrlsToFile() {
 
 	file.WriteString(strings.TrimSpace("{\"urls\":["))
 
-	for _, url := range urlsArray {
+	for i := 0; i < len(urlsArray); i++ {
 
+		commaBracket := "\"},"
+		if i == len(urlsArray)-1 {
+
+			commaBracket = "\"}"
+
+		}
 		_, err := file.WriteString(strings.TrimSpace("{\"url\":\""+
 			macaulayUrl+
-			url[7:9]+
-			url[6:]) +
-			"\"}," +
+			urlsArray[i][7:9]+
+			urlsArray[i][6:]) +
+			commaBracket +
 			"\n")
 
 		if err != nil {
