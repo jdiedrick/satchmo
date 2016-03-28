@@ -40,8 +40,6 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	fmt.Println(len(os.Args))
-
 	if len(os.Args) == 1{
 		fmt.Println("you need to pass in num of search pages to scrape. 1729 is currently the max")
 		return
@@ -54,7 +52,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			getUrlsFromPage(i)
+			getUrlsFromPage(i-1)
 			fmt.Println("size of array: ", len(recordings))
 		}()
 
@@ -65,7 +63,7 @@ func main() {
 	}
 	wg.Wait()
 
-	fmt.Println(len(recordings))
+	fmt.Println("num of recordings: ", len(recordings))
 	writeUrlsToFile()
 	fmt.Println("done~")
 }
@@ -85,7 +83,10 @@ func getUrlsFromPage(pageNum int) {
 	b.Close()
 	r := bytes.NewReader(res_bytes)
 	z := html.NewTokenizer(r)
+	recordingNum := 0
 loop:
+
+
 	for {
 		tt := z.Next()
 		switch {
@@ -94,40 +95,47 @@ loop:
 			//fmt.Println(urls)
 			// end of the document, we're done
 			break loop
+			
 		case tt == html.StartTagToken:
 			t := z.Token()
-
+			
 			isAnchor := t.Data == "a"
 			if isAnchor {
 				//fmt.Println("found a link~")
 				for _, a := range t.Attr {
 					if a.Key == "href" {
 						if len(a.Val) == 13 && a.Val[:7] == "/audio/" {
-							//fmt.Println("URL: ", a.Val)
+							fmt.Println("recordings size: ", len(recordings))
+							fmt.Println("URL: ", a.Val)
+							fmt.Print("Recording num: ", recordingNum)
 							recording := Recording{url: a.Val}
 							recordings = append(recordings, recording)
-							//urlsArray = append(urlsArray, a.Val)
-							break
+
 						}
 					}
 				}
 			}
 
-			/*
-			isDiv := t.Data == "div"
-			if isDiv {
-				//fmt.Println("found a link~")
-				for _, a := range t.Attr {
-					if a.Key == "href" {
-						if len(a.Val) == 13 && a.Val[:7] == "/audio/" {
-							//fmt.Println("URL: ", a.Val)
-							urlsArray = append(urlsArray, a.Val)
-							break
+			isH4 := t.Data == "h4"
+
+			if isH4{
+				for _, h4 := range t.Attr{
+					if h4.Key == "class"{
+						if h4.Val == "indent"{
+							z.Next()
+							t := z.Token()
+							fmt.Println(t.Data)
+							recordings[recordingNum].speciesCommon = string(t.Data)
+							recordingNum++
+
 						}
 					}
 				}
 			}
-			*/
+
+			
+			
+
 		}
 	}
 }
@@ -155,12 +163,15 @@ func writeUrlsToFile() {
 			commaBracket = "\"}"
 
 		}
-		_, err := file.WriteString(strings.TrimSpace("{\"url\":\""+
-			macaulayUrl+
-			recordings[i].url[7:9]+
-			recordings[i].url[6:]) +
+		_, err := file.WriteString(strings.TrimSpace(
+			"{\"url\":\"" +
+			macaulayUrl +
+			recordings[i].url[7:9] +
+			recordings[i].url[6:] +
+			", \"speciesCommon\":\"" +
+			strings.TrimSpace(recordings[i].speciesCommon) +
 			commaBracket +
-			"\n")
+			"\n"))
 
 		if err != nil {
 			fmt.Println(err)
