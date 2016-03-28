@@ -14,19 +14,32 @@ import (
 	"golang.org/x/net/html"
 )
 
-var urlsArray []string
+// https://www.golang-book.com/books/intro/9
+type Recording struct{
+
+	catalogNumber int
+	speciesCommon string
+	speciesScientific string
+	soundType string
+	location string
+	recordist string
+	date string
+	length string
+	quality int
+	url string
+}
+
+var recordings []Recording
 
 var macaulayUrl = "http://media2.macaulaylibrary.org/Audio/Audio1/"
 
 var searchUrl = "http://macaulaylibrary.org/search?&asset_format_id=1000&collection_type_id=1&layout=1&sort=21&page="
 
-const t = `{{range $i, $v := .}}{{if $i}} or {{$v}}{{else}}{{$v}}{{end}}{{end}}`
-
 func main() {
 
 	var wg sync.WaitGroup
 
-	numOfPagesToVisit := 1729 // change this to know how many pages to visit max seems to be 1729
+	numOfPagesToVisit := 1 // change this to know how many pages to visit max seems to be 1729, change this to command line argument
 
 	for i := 1; i < numOfPagesToVisit+1; i++ {
 		fmt.Println("page number: ", i)
@@ -34,7 +47,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 			getUrlsFromPage(i)
-			fmt.Println("size of array: ", len(urlsArray))
+			fmt.Println("size of array: ", len(recordings))
 		}()
 
 		if i%10 == 0 {
@@ -43,11 +56,11 @@ func main() {
 
 	}
 	wg.Wait()
-	fmt.Println(len(urlsArray))
+	fmt.Println(len(recordings))
 
-	for _, url := range urlsArray {
-		fmt.Println(macaulayUrl + url[7:9] + url[6:]) // get rid of "/audio" (first 6 characters) and get next two
-	}
+	//for _, url := range urlsArray {
+	//	fmt.Println(macaulayUrl + url[7:9] + url[6:]) // get rid of "/audio" (first 6 characters) and get next two
+	//}
 
 	writeUrlsToFile()
 	fmt.Println("done~")
@@ -61,6 +74,7 @@ func getUrlsFromPage(pageNum int) {
 	//fmt.Println("HTML:\n\n", string(res_bytes))
 	b := resp.Body
 
+	// so: http://stackoverflow.com/questions/26726203/runtime-error-invalid-memory-address-or-nil-pointer-dereference/26738639#comment42044181_26726203
 	if b == nil {
 		return
 	}
@@ -68,7 +82,6 @@ func getUrlsFromPage(pageNum int) {
 	b.Close()
 	r := bytes.NewReader(res_bytes)
 	z := html.NewTokenizer(r)
-	//fmt.Println(z)
 loop:
 	for {
 		tt := z.Next()
@@ -80,8 +93,26 @@ loop:
 			break loop
 		case tt == html.StartTagToken:
 			t := z.Token()
+
 			isAnchor := t.Data == "a"
 			if isAnchor {
+				//fmt.Println("found a link~")
+				for _, a := range t.Attr {
+					if a.Key == "href" {
+						if len(a.Val) == 13 && a.Val[:7] == "/audio/" {
+							//fmt.Println("URL: ", a.Val)
+							recording := Recording{url: a.Val}
+							recordings = append(recordings, recording)
+							//urlsArray = append(urlsArray, a.Val)
+							break
+						}
+					}
+				}
+			}
+
+			/*
+			isDiv := t.Data == "div"
+			if isDiv {
 				//fmt.Println("found a link~")
 				for _, a := range t.Attr {
 					if a.Key == "href" {
@@ -93,6 +124,7 @@ loop:
 					}
 				}
 			}
+			*/
 		}
 	}
 }
@@ -112,18 +144,18 @@ func writeUrlsToFile() {
 
 	file.WriteString(strings.TrimSpace("{\"urls\":["))
 
-	for i := 0; i < len(urlsArray); i++ {
+	for i := 0; i < len(recordings); i++ {
 
 		commaBracket := "\"},"
-		if i == len(urlsArray)-1 {
+		if i == len(recordings)-1 {
 
 			commaBracket = "\"}"
 
 		}
 		_, err := file.WriteString(strings.TrimSpace("{\"url\":\""+
 			macaulayUrl+
-			urlsArray[i][7:9]+
-			urlsArray[i][6:]) +
+			recordings[i].url[7:9]+
+			recordings[i].url[6:]) +
 			commaBracket +
 			"\n")
 
