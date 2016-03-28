@@ -15,19 +15,17 @@ import (
 )
 
 // https://www.golang-book.com/books/intro/9
-type Recording struct{
-
-	catalogNumber int
-	speciesCommon string
+type Recording struct {
+	catalogNumber     int
+	speciesCommon     string
 	speciesScientific string
-	soundType string
-	location string
-	recordist string
-	date string
-	length string
-	quality int
-	url string
-
+	soundType         string
+	location          string
+	recordist         string
+	date              string
+	length            string
+	quality           int
+	url               string
 }
 
 var recordings []Recording
@@ -40,7 +38,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	if len(os.Args) == 1{
+	if len(os.Args) == 1 {
 		fmt.Println("you need to pass in num of search pages to scrape. 1729 is currently the max")
 		return
 	}
@@ -52,7 +50,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			getUrlsFromPage(i-1)
+			getUrlsFromPage(i - 1)
 			fmt.Println("size of array: ", len(recordings))
 		}()
 
@@ -86,7 +84,6 @@ func getUrlsFromPage(pageNum int) {
 	recordingNum := 0
 loop:
 
-
 	for {
 		tt := z.Next()
 		switch {
@@ -95,10 +92,10 @@ loop:
 			//fmt.Println(urls)
 			// end of the document, we're done
 			break loop
-			
+
 		case tt == html.StartTagToken:
 			t := z.Token()
-			
+
 			isAnchor := t.Data == "a"
 			if isAnchor {
 				//fmt.Println("found a link~")
@@ -118,10 +115,10 @@ loop:
 
 			isH4 := t.Data == "h4"
 
-			if isH4{
-				for _, h4 := range t.Attr{
-					if h4.Key == "class"{
-						if h4.Val == "indent"{
+			if isH4 {
+				for _, h4 := range t.Attr {
+					if h4.Key == "class" {
+						if h4.Val == "indent" {
 							z.Next()
 							t := z.Token()
 							fmt.Println(t.Data)
@@ -132,9 +129,6 @@ loop:
 					}
 				}
 			}
-
-			
-			
 
 		}
 	}
@@ -165,13 +159,14 @@ func writeUrlsToFile() {
 		}
 		_, err := file.WriteString(strings.TrimSpace(
 			"{\"url\":\"" +
-			macaulayUrl +
-			recordings[i].url[7:9] +
-			recordings[i].url[6:] +
-			", \"speciesCommon\":\"" +
-			strings.TrimSpace(recordings[i].speciesCommon) +
-			commaBracket +
-			"\n"))
+				macaulayUrl +
+				recordings[i].url[7:9] +
+				recordings[i].url[6:] +
+				"\"" +
+				", \"speciesCommon\":\"" +
+				strings.TrimSpace(recordings[i].speciesCommon) +
+				commaBracket +
+				"\n"))
 
 		if err != nil {
 			fmt.Println(err)
