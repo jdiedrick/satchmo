@@ -4,4 +4,6 @@
 
 a scraper for the macaulay library
 
-`go run main.go` will generate a json file of urls to mp3s that are available from the search page on the archive's site.
+`go run main.go [NUMBER_OF_PAGES]` will generate a json file of urls to mp3s that are available from the search page on the archive's site.
+
+as of writing there are up to 1729 pages

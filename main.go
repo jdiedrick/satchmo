@@ -27,6 +27,7 @@ type Recording struct{
 	length string
 	quality int
 	url string
+
 }
 
 var recordings []Recording
@@ -39,7 +40,14 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	numOfPagesToVisit := 1 // change this to know how many pages to visit max seems to be 1729, change this to command line argument
+	fmt.Println(len(os.Args))
+
+	if len(os.Args) == 1{
+		fmt.Println("you need to pass in num of search pages to scrape. 1729 is currently the max")
+		return
+	}
+
+	numOfPagesToVisit, _ := strconv.Atoi(os.Args[1])
 
 	for i := 1; i < numOfPagesToVisit+1; i++ {
 		fmt.Println("page number: ", i)
@@ -56,12 +64,8 @@ func main() {
 
 	}
 	wg.Wait()
+
 	fmt.Println(len(recordings))
-
-	//for _, url := range urlsArray {
-	//	fmt.Println(macaulayUrl + url[7:9] + url[6:]) // get rid of "/audio" (first 6 characters) and get next two
-	//}
-
 	writeUrlsToFile()
 	fmt.Println("done~")
 }
@@ -71,7 +75,6 @@ func getUrlsFromPage(pageNum int) {
 	url := searchUrl + strconv.Itoa(pageNum)
 	resp, _ := http.Get(url)
 	res_bytes, _ := ioutil.ReadAll(resp.Body)
-	//fmt.Println("HTML:\n\n", string(res_bytes))
 	b := resp.Body
 
 	// so: http://stackoverflow.com/questions/26726203/runtime-error-invalid-memory-address-or-nil-pointer-dereference/26738639#comment42044181_26726203
