@@ -14,15 +14,16 @@ import (
 // https://www.golang-book.com/books/intro/9
 type Recording struct {
 	catalogNumber     int
-	speciesCommon     string
-	speciesScientific string
-	soundType         string
-	location          string
-	recordist         string
 	date              string
 	length            string
-	quality           int
+	speciesCommon     string
+	speciesScientific string
+	recordist         string
 	url               string
+
+	//location
+	//sound type
+	//quality
 }
 
 var recordings []Recording
@@ -75,46 +76,78 @@ func getUrlsFromPage(pageNum int) {
 
 	doc.Find("div.catalog").Each(func(i int, s *goquery.Selection) {
 
-		url := strings.TrimSpace(s.Text())
-		
+		recordingNumber := strings.TrimSpace(s.Text())
+		url := macaulayUrl + recordingNumber[:2] + "/" + recordingNumber
+
 		recording := Recording{url: url}
 		recordings = append(recordings, recording)
-		fmt.Println(i, url)
 
 	})
 
-	//get name
+	//get species scientific name
 	doc.Find("div.search-results").Find("div.subject").Each(func(i int, s *goquery.Selection) {
-		
+		scientificName := s.Find("h4.indent").Children().Text()
+
+		if scientificName == "" {
+			scientificName = s.Find("h4").Text()
+		}
+
+		recordings[i].speciesScientific = scientificName
+	})
+
+	//get species common name
+	doc.Find("div.search-results").Find("div.subject").Each(func(i int, s *goquery.Selection) {
+
 		name := ""
 
 		commonName := s.Find("h4.indent").Text()
 
-		if commonName != ""{
+		if commonName != "" {
 			name = strings.TrimSpace(s.Find("h4.indent").Children().Remove().End().Text())
-		} else{
+		} else {
 			// no common name
-			name = strings.TrimSpace(s.Text())
+			name = "No Common Name"
 		}
-
-		fmt.Println(i, name)
 
 		recordings[i].speciesCommon = name
 
 	})
-	
+
 	//get date
 	doc.Find("div.search-results").Find("div.date").Each(func(i int, s *goquery.Selection) {
-		
+
 		date := strings.TrimSpace(s.Text())
 		recordings[i].date = date
 
 	})
-	
-	for i, recording := range recordings{
-		fmt.Println("Recording info: ", i, recording.speciesCommon, recording.url)
-	}
 
+	//get recordist, need to fixup first name
+	doc.Find("div.search-results").Find("div.recordist").Each(func(i int, s *goquery.Selection) {
+
+		recordist := ""
+		lastName := strings.TrimSpace(s.Children().Remove().End().Text())
+		firstName := strings.TrimSpace(s.Find("div.indent").Text())
+		recordist = lastName + firstName
+		recordings[i].recordist = recordist
+
+	})
+
+	//get length
+	doc.Find("div.search-results").Find("div.length").Each(func(i int, s *goquery.Selection) {
+
+		length := strings.TrimSpace(s.Text())
+		recordings[i].length = length
+
+	})
+
+	//get catalog number
+	doc.Find("div.catalog").Each(func(i int, s *goquery.Selection) {
+
+		catalogNumber, _ := strconv.Atoi(strings.TrimSpace(s.Text()))
+
+		recordings[i].catalogNumber = catalogNumber
+
+	})
 
 }
 
@@ -142,16 +175,40 @@ func writeUrlsToFile() {
 
 		}
 		_, err := file.WriteString(strings.TrimSpace(
-			"{\"url\":\"" +
-				macaulayUrl +
-				recordings[i].url[:2] +
-				"/" +
-				recordings[i].url +
+			"{" +
+				"\"catalogNumber\":\"" +
+				strings.TrimSpace(strconv.Itoa(recordings[i].catalogNumber)) +
 				"\"" +
-				", \"speciesCommon\":\"" +
-				strings.TrimSpace(recordings[i].speciesCommon) +
-				", \"date\":\"" +
+
+				", " +
+				"\"date\":\"" +
 				strings.TrimSpace(recordings[i].date) +
+				"\"" +
+
+				", " +
+				"\"length\":\"" +
+				strings.TrimSpace(recordings[i].length) +
+				"\"" +
+
+				", " +
+				"\"speciesCommon\":\"" +
+				strings.TrimSpace(recordings[i].speciesCommon) +
+				"\"" +
+
+				", " +
+				"\"speciesScientific\":\"" +
+				strings.TrimSpace(recordings[i].speciesScientific) +
+				"\"" +
+
+				", " +
+				"\"recordist\":\"" +
+				strings.TrimSpace(recordings[i].recordist) +
+				"\"" +
+
+				", " +
+				"\"url\":\"" +
+				recordings[i].url +
+
 				commaBracket +
 				"\n"))
 
