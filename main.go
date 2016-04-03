@@ -1,17 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"github.com/PuerkitoBio/goquery"
+	"log"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/net/html"
 )
 
 // https://www.golang-book.com/books/intro/9
@@ -69,69 +66,56 @@ func main() {
 func getUrlsFromPage(pageNum int) {
 
 	url := searchUrl + strconv.Itoa(pageNum)
-	resp, _ := http.Get(url)
-	res_bytes, _ := ioutil.ReadAll(resp.Body)
-	b := resp.Body
 
-	// so: http://stackoverflow.com/questions/26726203/runtime-error-invalid-memory-address-or-nil-pointer-dereference/26738639#comment42044181_26726203
-	if b == nil {
-		return
+	doc, err := goquery.NewDocument(url)
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	b.Close()
-	r := bytes.NewReader(res_bytes)
-	z := html.NewTokenizer(r)
-	recordingNum := 0
-loop:
+	doc.Find("div.catalog").Each(func(i int, s *goquery.Selection) {
 
-	for {
-		tt := z.Next()
-		switch {
-		case tt == html.ErrorToken:
-			//fmt.Println("Len urls %i: ", len(urls))
-			//fmt.Println(urls)
-			// end of the document, we're done
-			break loop
+		url := strings.TrimSpace(s.Text())
+		
+		recording := Recording{url: url}
+		recordings = append(recordings, recording)
+		fmt.Println(i, url)
 
-		case tt == html.StartTagToken:
-			t := z.Token()
+	})
 
-			isAnchor := t.Data == "a"
-			if isAnchor {
-				//fmt.Println("found a link~")
-				for _, a := range t.Attr {
-					if a.Key == "href" {
-						if len(a.Val) == 13 && a.Val[:7] == "/audio/" {
-							fmt.Println("recordings size: ", len(recordings))
-							fmt.Println("URL: ", a.Val)
-							fmt.Print("Recording num: ", recordingNum)
-							recording := Recording{url: a.Val}
-							recordings = append(recordings, recording)
+	//get name
+	doc.Find("div.search-results").Find("div.subject").Each(func(i int, s *goquery.Selection) {
+		
+		name := ""
 
-						}
-					}
-				}
-			}
+		commonName := s.Find("h4.indent").Text()
 
-			isH4 := t.Data == "h4"
-
-			if isH4 {
-				for _, h4 := range t.Attr {
-					if h4.Key == "class" {
-						if h4.Val == "indent" {
-							z.Next()
-							t := z.Token()
-							fmt.Println(t.Data)
-							recordings[recordingNum].speciesCommon = string(t.Data)
-							recordingNum++
-
-						}
-					}
-				}
-			}
-
+		if commonName != ""{
+			name = strings.TrimSpace(s.Find("h4.indent").Children().Remove().End().Text())
+		} else{
+			// no common name
+			name = strings.TrimSpace(s.Text())
 		}
+
+		fmt.Println(i, name)
+
+		recordings[i].speciesCommon = name
+
+	})
+	
+	//get date
+	doc.Find("div.search-results").Find("div.date").Each(func(i int, s *goquery.Selection) {
+		
+		date := strings.TrimSpace(s.Text())
+		recordings[i].date = date
+
+	})
+	
+	for i, recording := range recordings{
+		fmt.Println("Recording info: ", i, recording.speciesCommon, recording.url)
 	}
+
+
 }
 
 //from so: http://stackoverflow.com/questions/5884154/golang-read-text-file-into-string-array-and-write
@@ -160,11 +144,14 @@ func writeUrlsToFile() {
 		_, err := file.WriteString(strings.TrimSpace(
 			"{\"url\":\"" +
 				macaulayUrl +
-				recordings[i].url[7:9] +
-				recordings[i].url[6:] +
+				recordings[i].url[:2] +
+				"/" +
+				recordings[i].url +
 				"\"" +
 				", \"speciesCommon\":\"" +
 				strings.TrimSpace(recordings[i].speciesCommon) +
+				", \"date\":\"" +
+				strings.TrimSpace(recordings[i].date) +
 				commaBracket +
 				"\n"))
 
