@@ -77,8 +77,11 @@ func getUrlsFromPage(pageNum int) {
 	doc.Find("div.catalog").Each(func(i int, s *goquery.Selection) {
 
 		recordingNumber := strings.TrimSpace(s.Text())
-		url := macaulayUrl + recordingNumber[:2] + "/" + recordingNumber
-
+		
+		url := ""
+		if(len(recordingNumber) > 2 ){
+			url = macaulayUrl + recordingNumber[:2] + "/" + recordingNumber
+		}
 		recording := Recording{url: url}
 		recordings = append(recordings, recording)
 
